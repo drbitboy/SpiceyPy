@@ -68,7 +68,7 @@ def cleanup_Cassini_Kernels():
 class ExtraKernels(object):
     voyagerSclk_url     = makeurl("vg200022.tsc")
     earthTopoTf_url     = makeurl("earth_topo_050714.tf")
-    earthHighPerPck_url = makeurl("earth_031228_231229_predict.bpc")
+    earthHighPerPck_url = makeurl("allbpck.bpc")
     phobosDsk_url       = makeurl("phobos_lores.bds")
     voyagerSclk         = getPathFromUrl(voyagerSclk_url)
     earthTopoTf         = getPathFromUrl(earthTopoTf_url)

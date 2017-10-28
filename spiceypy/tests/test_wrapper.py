@@ -4751,8 +4751,10 @@ def test_pckcov():
     spice.scard(0, cover)
     spice.pckcov(ExtraKernels.earthHighPerPck, ids[0], cover)
     result = [x for x in cover]
-    expected = [94305664.18380372, 757080064.1838132]
-    npt.assert_array_almost_equal(result, expected)
+    expected = [119272009.543550, 119358398.281820,
+                216200173.881410, 216459340.096210,
+                231404591.816760, 231577369.293290]
+    npt.assert_array_almost_equal(result, expected, decimal=5)
     spice.kclear()
 
 
