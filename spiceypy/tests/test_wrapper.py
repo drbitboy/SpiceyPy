@@ -6093,7 +6093,7 @@ def test_spkopa():
     spice.spkcls(handle_test)
     # open the file to append to it
     handle_spkopa = spice.spkopa(SPKOPA)
-    et2 = spice.str2et("2003 APR 27 00:00:00.000 TDB")
+    et2 = spice.str2et("2004 JUL 04 00:00:00.000 TDB")
     handle, descr, ident = spice.spksfs(5, et2, 41)
     body, center, frame, otype, first, last, begin, end = spice.spkuds(descr)
     spice.spksub(handle, descr, ident, first, last, handle_spkopa)
