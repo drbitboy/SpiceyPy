@@ -361,9 +361,8 @@ def test_ckcov():
     spice.furnsh(CassiniKernels.cassSclk)
     ckid = spice.ckobj(CassiniKernels.cassCk)[0]
     cover = spice.ckcov(CassiniKernels.cassCk, ckid, False, "INTERVAL", 0.0, "SCLK")
-    expected_intervals = [[267832537952.000000, 267839247264.000000],
-                          [267839256480.000000, 267867970464.000000],
-                          [267868006304.000000, 267876773792.000000]]
+    expected_intervals = [[267832537952.000000, 267832568245.000000],
+                          [267841983985.000000, 267844057598.000000]]
     assert [[cover[i*2],cover[i*2+1]] for i in range(spice.wncard(cover))] == expected_intervals
     spice.kclear()
 
@@ -3318,15 +3317,15 @@ def test_gfrfov():
     inst  = "CASSINI_ISS_WAC"
     # Cassini ISS NAC observed Enceladus on 2013-FEB-25 from ~11:00 to ~12:00
     # Split confinement window, from continuous CK coverage, into two pieces
-    et_start1 = spice.str2et("2013-FEB-25 07:20:00.000")
+    et_start1 = spice.str2et("2013-FEB-25 10:20:00.000")
     et_end1   = spice.str2et("2013-FEB-25 11:45:00.000") #\
     et_start2 = spice.str2et("2013-FEB-25 11:55:00.000") #_>synthetic 10min gap
-    et_end2   = spice.str2et("2013-FEB-26 14:25:00.000")
+    et_end2   = spice.str2et("2013-FEB-25 12:25:00.000")
     cnfine    = spice.stypes.SPICEDOUBLE_CELL(4)
     spice.wninsd(et_start1, et_end1, cnfine)
     spice.wninsd(et_start2, et_end2, cnfine)
     # The ray direction vector is from Cassini toward Enceladus during the gap
-    et_nom    = spice.str2et("2013-FEB-25 11:50:00.000") #\
+    et_nom    = spice.str2et("2013-FEB-25 11:50:00.000")
     raydir, lt  = spice.spkpos("Enceladus", et_nom, "J2000", "NONE", "Cassini")
     result   = spice.stypes.SPICEDOUBLE_CELL(2000)
     spice.gfrfov(inst, raydir, "J2000", "NONE", "Cassini", 10.0, cnfine, result)
@@ -3510,10 +3509,10 @@ def test_gftfov():
     # begin test
     # Cassini ISS NAC observed Enceladus on 2013-FEB-25 from ~11:00 to ~12:00
     # Split confinement window, from continuous CK coverage, into two pieces
-    et_start1 = spice.str2et("2013-FEB-25 07:20:00.000")
+    et_start1 = spice.str2et("2013-FEB-25 10:20:00.000")
     et_end1   = spice.str2et("2013-FEB-25 11:45:00.000") #\
     et_start2 = spice.str2et("2013-FEB-25 11:55:00.000") #_>synthetic 10min gap
-    et_end2   = spice.str2et("2013-FEB-26 14:25:00.000")
+    et_end2   = spice.str2et("2013-FEB-25 12:25:00.000")
     cnfine    = spice.stypes.SPICEDOUBLE_CELL(4)
     spice.wninsd(et_start1, et_end1, cnfine)
     spice.wninsd(et_start2, et_end2, cnfine)

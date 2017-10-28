@@ -48,7 +48,7 @@ makeurl = lambda bn: "https://raw.githubusercontent.com/{}/SpiceyPyTestKernels/{
 class CassiniKernels(object):
     cassPck_url     = makeurl("cpck05Mar2004.tpc")
     cassFk_url      = makeurl("cas_v40.tf")
-    cassCk_url      = makeurl("13056_13057ra.bc")
+    cassCk_url      = makeurl("allck.bc")
     cassSclk_url    = makeurl("cas00167.tsc")
     cassIk_url      = makeurl("cas_iss_v10.ti")
     cassPck         = getPathFromUrl(cassPck_url)
