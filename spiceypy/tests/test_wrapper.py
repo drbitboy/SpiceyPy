@@ -810,7 +810,7 @@ def test_dafac():
 
 def test_dafbbs():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbbs(handle)
     found = spice.daffpa()
     assert found
@@ -820,7 +820,7 @@ def test_dafbbs():
 
 def test_dafbfs():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
@@ -830,7 +830,7 @@ def test_dafbfs():
 
 def test_dafcls():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
@@ -840,7 +840,7 @@ def test_dafcls():
 
 def test_dafcs():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbbs(handle)
     spice.dafcs(handle)
     found = spice.daffpa()
@@ -898,23 +898,37 @@ def test_dafdc():
 
 def test_dafec():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
-    n, buffer, done = spice.dafec(handle, 13)
-    assert n == 13
-    assert buffer == ['; de405s.bsp LOG FILE', ';', '; Created 1997-12-19/18:07:31.00.', ';',
-                      '; BEGIN NIOSPK COMMANDS', '', 'LEAPSECONDS_FILE    = /kernels/gen/lsk/naif0006.tls',
-                      'SPK_FILE            = de405s.bsp', '  SOURCE_NIO_FILE   = /usr2/nio/gen/de405.nio',
-                      '    BODIES          = 1 2 3 4 5 6 7 8 9 10 301 399 199 299 499',
-                      '    BEGIN_TIME      = CAL-ET 1997 JAN 01 00:01:02.183',
-                      '    END_TIME        = CAL-ET 2010 JAN 02 00:01:03.183', '']
+    handle = spice.dafopr(CoreKernels.allspk)
+    # Read all but last of 366 comment lines
+    n, buffer, done = spice.dafec(handle, 365)
+    # Check returned values; only check first 13 comment lines
+    assert n == 365
     assert done is False
+    # - Remove creation date from buffer[2]
+    buffer[2] = buffer[2][:len('; Created ')]
+    assert buffer[:13] == ['; allspk.bsp LOG FILE', '',
+                           '; Created ', ';',
+                           '; BEGIN SPKMERGE COMMANDS', '',
+                           'LEAPSECONDS_KERNEL   = naif0012.tls', '',
+                           'SPK_KERNEL           = allspk.bsp',
+                           '  SOURCE_SPK_KERNEL  = 130220AP_SE_13043_13073.bsp',
+                           '    INCLUDE_COMMENTS = NO',
+                           '    BODIES           = 10',
+                           '    BEGIN_TIME       = 2013 FEB 25 10:18:24.815']
+    # Read next comment line, i.e. last of 366 comment lines
+    # Check returned values
+    n, buffer, done = spice.dafec(handle, 10)
+    # Check returned values
+    assert n == 1
+    assert done is True
+    assert buffer[0] == '; END SPKMERGE COMMANDS'
+    # Clean up
     spice.dafcls(handle)
-    spice.kclear()
 
 
 def test_daffna():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
@@ -924,7 +938,7 @@ def test_daffna():
 
 def test_daffpa():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbbs(handle)
     found = spice.daffpa()
     assert found
@@ -935,7 +949,7 @@ def test_daffpa():
 def test_dafgda():
     # not a very good test...
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     elements = spice.dafgda(handle, 20, 21)
     assert elements == [0.0]
     spice.dafcls(handle)
@@ -944,7 +958,7 @@ def test_dafgda():
 
 def test_dafgh():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbbs(handle)
     spice.dafcs(handle)
     searchHandle = spice.dafgh()
@@ -955,26 +969,26 @@ def test_dafgh():
 
 def test_dafgn():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
     out = spice.dafgs(n=2)
-    npt.assert_array_almost_equal(out, [-9.46511378160646408796e+07,   3.15662463183953464031e+08])
+    npt.assert_array_almost_equal(out, [415059572.000000, 415065665.000000])
     outname = spice.dafgn(100)
-    assert outname == 'DE-405'
+    assert outname == 'MONTE Chebyshev Polynomial Table'
     spice.dafcls(handle)
     spice.kclear()
 
 
 def test_dafgs():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
     out = spice.dafgs(n=2)
-    npt.assert_array_almost_equal(out, [-9.46511378160646408796e+07,   3.15662463183953464031e+08])
+    npt.assert_array_almost_equal(out, [415059572.000000, 415065665.000000])
     spice.dafcls(handle)
     spice.kclear()
 
@@ -991,7 +1005,7 @@ def test_dafgsr():
     # Open DAF
     # N.B. The SPK used must use the LTL-IEEE double byte-ordering and format
     # This should be de405s.bsp from the test kernel set
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     # get ND, NI (N.B. for SPKs, ND=2 and NI=6),
     # and first, last and free record numbers
     nd, ni, ifname, fward, bward, free = rtnDafrfr = spice.dafrfr(handle)
@@ -1006,31 +1020,36 @@ def test_dafgsr():
         # * drec(2) PREV backward pointer (not used here)
         # * drec(3) NSUM Number of single summaries in this DAF record
         fward, bward, nSS = drec = map(int, spice.dafgsr(handle, iRecno, 1, 3))
-        # There is only one summary record in de405s.bsp
-        assert iRecno == 7 and fward is 0 and bward is 0 and nSS == 15
+        # First summary record is DAF record 20
+        if bward == 0:
+            assert iRecno == 16 and fward == 97 and nSS == 25
         # Set index to first word of first summary
         firstWord = 4
-        # Set DAF record before daf421.bsp next summary record's first record (641)
-        lastIEndWord = 1024
-        for iSS in range(1, nSS+1):
+        # Set DAF word before first segment's first word, which will be the last word of the next record after summary record
+        lastIEndWord = (iRecno + 1) * 128
+        # Loop over single summaries
+        for iSS in range(int(nSS)):
             # Get packed summary
             drec = spice.dafgsr(handle, iRecno, firstWord, firstWord+ss-1)
             # Unpack summary
             dc, ic = spice.dafus(drec, nd, ni)
             iBody, iCenter, iFrame, iSPKtype, iStartWord, iEndWord = ic
-            # SPK de405s.bsp ephemerides run from [1997 JAN 01 00:01:02.183 (TDB)] to [2010 JAN 02 00:01:03.183 (TDB)]
-            npt.assert_array_almost_equal(dc, [-9.46511378160646408796e+07,   3.15662463183953464031e+08])
-            # Solar System body barycenters (IDs 1-10) centers are the Solar System Barycenter (ID=0)
-            # All other bodies' centers (e.g. 301; Moon) are their systems barycenter (e.g. 3 Earth-Moon Barycenter)
-            assert (iBody // 100) == iCenter
-            # All de405s.bsp ephemerides are in the J2000 frame (ID 1), use Type 2 SPK records,
-            # and start after the last record for the previous ephemeris
-            assert iFrame == 1 and iSPKtype == 2 and (lastIEndWord+1) == iStartWord
-            # Set up for next pa through loop
+            # First segment runs from [1997 JAN 01 00:01:02.183 (TDB)] to [2010 JAN 02 00:01:03.183 (TDB)]
+            if not iSS and not bward:
+                npt.assert_array_almost_equal(dc, [415059572.000000, 415065665.000000])
+            # Solar system primary barycenters (IDs 1-10) centers are the Solar System Barycenter (ID=0)
+            # All other solar system bodies' centers (e.g. 301; Moon) are their systems barycenter (e.g. 3 Earth-Moon Barycenter)
+            if iBody > 0 and iBody < 1000:
+                assert (iBody // 100) == iCenter
+            # Most ephemeris segments are in the J2000 frame (ID 1),
+            # are Type 2 SPK segments; all start immediately after the last
+            # word (lastIEndWord) for the previous segment
+            if iBody not in [602, 399013, 499, 401, 4, 401, 10, -82]:
+                assert iFrame == 1 and iSPKtype == 2
+            assert (lastIEndWord+1) == iStartWord
+            # Setup for next segment:  advance BEGIN word of next single summary
             firstWord += ss
             lastIEndWord = iEndWord
-        # There is only one summary record in de405s.bsp
-        assert fward is 0
     # Cleanup
     spice.dafcls(handle)
     spice.reset()
@@ -1039,7 +1058,7 @@ def test_dafgsr():
 
 def test_dafopr():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
@@ -1048,11 +1067,17 @@ def test_dafopr():
 
 
 def test_dafopw():
+    spice.reset()
     spice.kclear()
-    handle = spice.dafopw(CoreKernels.spk)
+    # Ensure DAF (SPK) is closed; dafopr() will return existing handle if DAF is already open
+    handle = spice.dafopr(CoreKernels.allspk)
+    spice.dafcls(handle)
+    # Re-open DAF for write, begin a forward search and find first array, but don't write anything
+    handle = spice.dafopw(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
+    # Cleanup
     spice.dafcls(handle)
     spice.kclear()
 
@@ -1111,53 +1136,61 @@ def test_dafrda():
     # Open DAF
     # N.B. The SPK used must use the LTL-IEEE double byte-ordering and format
     # This should be de405s.bsp from the test kernel set
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     # get ND, NI (N.B. for SPKs, ND=2 and NI=6),
     # and first, last and free record numbers
     nd, ni, ifname, fward, bward, free = rtnDafrfr = spice.dafrfr(handle)
     assert nd == 2 and ni == 6
     # Calculate Single Summary size
     ss = nd + ((ni+1) >> 1) 
-    iRecno = fward
-    # Get first three words at summary record (DAF record iRecno)
-    # * drec(1) NEXT forward pointer to next summary record
-    # * drec(2) PREV backward pointer (not used here)
-    # * drec(3) NSUM Number of single summaries in this DAF record
-    fward, bward, nSS = drec = map(int, spice.dafgsr(handle, iRecno, 1, 3))
-    # There is only one summary record in de405s.bsp
-    assert iRecno == 7 and fward is 0 and bward is 0 and nSS == 15
-    # Set index to first word of first summary
-    firstWord = 4
-    # Set DAF word before first segments first word (641 for de405s.bsp)
-    lastIEndWord = 1024
-    # Loop over single summaries
-    for iSS in range(int(nSS)):
-        # Get packed summary
-        drec = spice.dafgsr(handle, iRecno, firstWord, firstWord+ss-1)
-        # Unpack summary
-        dc, ic = spice.dafus(drec, nd, ni)
-        iBody, iCenter, iFrame, iSPKtype, iStartWord, iEndWord = ic
-        # SPK de405s.bsp ephemerides run from [1997 JAN 01 00:01:02.183 (TDB)] to [2010 JAN 02 00:01:03.183 (TDB)]
-        npt.assert_array_almost_equal(dc, [-9.46511378160646408796e+07,   3.15662463183953464031e+08])
-        # Solar System body barycenters (IDs 1-10) centers are the Solar System Barycenter (ID=0)
-        # All other bodies' centers (e.g. 301; Moon) are their systems barycenter (e.g. 3 Earth-Moon Barycenter)
-        assert (iBody // 100) == iCenter
-        # All de405s.bsp ephemeris segments are in the J2000 frame (ID 1),
-        # are Type 2 SPK segments, and start immediately after the last
-        # word (lastIEndWord) for the previous segment
-        assert iFrame == 1 and iSPKtype == 2 and (lastIEndWord+1) == iStartWord
-        # Get the four-word directory at the end of the segment
-        segmentInit, segmentIntlen, segmentRsize, segmentN = segmentLast4 = spice.dafrda(handle, ic[5]-3, ic[5])
-        # Check segment word count (1+END-BEGIN) against directory word content
-        # Type 2 SPK segment word count:
-        # - A count of [segmentN] Chebyshev polynomial records @ RSIZE words per Cheby. poly. record
-        # - A four-word directory at the end of the segment
-        # So ((RSIZE * N) + 4) == (1 + END - BEGIN)
-        # - cf. https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/spk.html#Type%202:%20Chebyshev%20%28position%20only%29
-        assert (3 + (segmentRsize * segmentN)) == (ic[5] - ic[4])
-        # Setup for next segment:  advance BEGIN word of next single summary
-        firstWord += ss
-        lastIEndWord = iEndWord
+    # Loop over Summary records
+    while fward > 0:
+        iRecno = fward
+        # Get first three words at summary record (DAF record iRecno)
+        # * drec(1) NEXT forward pointer to next summary record
+        # * drec(2) PREV backward pointer (not used here)
+        # * drec(3) NSUM Number of single summaries in this DAF record
+        fward, bward, nSS = drec = map(int, spice.dafgsr(handle, iRecno, 1, 3))
+        # First summary record is DAF record 20
+        if bward == 0:
+            assert iRecno == 16 and fward == 97 and nSS == 25
+        # Set index to first word of first summary
+        firstWord = 4
+        # Set DAF word before first segment's first word, which will be the last word of the next record after summary record
+        lastIEndWord = (iRecno + 1) * 128
+        # Loop over single summaries
+        for iSS in range(int(nSS)):
+            # Get packed summary
+            drec = spice.dafgsr(handle, iRecno, firstWord, firstWord+ss-1)
+            # Unpack summary
+            dc, ic = spice.dafus(drec, nd, ni)
+            iBody, iCenter, iFrame, iSPKtype, iStartWord, iEndWord = ic
+            # First segment runs from [1997 JAN 01 00:01:02.183 (TDB)] to [2010 JAN 02 00:01:03.183 (TDB)]
+            if not iSS and not bward:
+                npt.assert_array_almost_equal(dc, [415059572.000000, 415065665.000000])
+            # Solar system primary barycenters (IDs 1-10) centers are the Solar System Barycenter (ID=0)
+            # All other solar system bodies' centers (e.g. 301; Moon) are their systems barycenter (e.g. 3 Earth-Moon Barycenter)
+            if iBody > 0 and iBody < 1000:
+                assert (iBody // 100) == iCenter
+            # Most ephemeris segments are in the J2000 frame (ID 1),
+            # are Type 2 SPK segments; all start immediately after the last
+            # word (lastIEndWord) for the previous segment
+            if iBody not in [602, 399013, 499, 401, 4, 401, 10, -82]:
+                assert iFrame == 1 and iSPKtype == 2
+            assert (lastIEndWord+1) == iStartWord
+            # Get the four-word directory at the end of the segment
+            segmentInit, segmentIntlen, segmentRsize, segmentN = segmentLast4 = spice.dafrda(handle, ic[5]-3, ic[5])
+            if iSPKtype == 2:
+                # Check segment word count (1+END-BEGIN) against directory word content
+                # Type 2 SPK segment word count:
+                # - A count of [segmentN] Chebyshev polynomial records @ RSIZE words per Cheby. poly. record
+                # - A four-word directory at the end of the segment
+                # So ((RSIZE * N) + 4) == (1 + END - BEGIN)
+                # - cf. https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/spk.html#Type%202:%20Chebyshev%20%28position%20only%29
+                assert (3 + (segmentRsize * segmentN)) == (ic[5] - ic[4])
+            # Setup for next segment:  advance BEGIN word of next single summary
+            firstWord += ss
+            lastIEndWord = iEndWord
     # Cleanup
     spice.dafcls(handle)
     spice.reset()
@@ -1166,28 +1199,28 @@ def test_dafrda():
 
 def test_dafrfr():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     nd, ni, ifname, fward, bward, free = spice.dafrfr(handle)
     spice.dafcls(handle)
     assert nd == 2
     assert ni == 6
-    assert ifname == ""
-    assert fward == 7
-    assert bward == 7
+    assert ifname == "SPKMERGE"
+    assert fward == 16
+    assert bward == 159
     spice.kclear()
 
 
 def test_dafus():
     spice.kclear()
-    handle = spice.dafopr(CoreKernels.spk)
+    handle = spice.dafopr(CoreKernels.allspk)
     spice.dafbfs(handle)
     found = spice.daffna()
     assert found
     out = spice.dafgs(n=124)
     dc, ic = spice.dafus(out, 2, 6)
     spice.dafcls(handle)
-    npt.assert_array_almost_equal(dc, [-9.46511378160646408796e+07,   3.15662463183953464031e+08])
-    npt.assert_array_almost_equal(ic, [1, 0, 1, 2, 1025, 27164])
+    npt.assert_array_almost_equal(dc, [415059572.000000, 415065665.000000])
+    npt.assert_array_almost_equal(ic, [10, 0, 1, 2, 2177, 2215])
     spice.kclear()
 
 
@@ -2854,8 +2887,6 @@ def test_fovray():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     # core of test
     camid = spice.bodn2c("CASSINI_ISS_NAC")
@@ -2875,8 +2906,6 @@ def test_fovtrg():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     # core of test
     et = spice.str2et("2013 FEB 25 11:50:00 UTC")
@@ -3085,7 +3114,6 @@ def test_gffove():
 def test_gfilum():
     spice.kclear()
     spice.furnsh(CoreKernels.testMetaKernel)
-    spice.furnsh(ExtraKernels.marsSpk)         # to get Phobos ephemeris
     # Hard-code the future position of MER-1
     # pos, lt = spice.spkpos("MER-1", spice.str2et("2006 OCT 02 00:00:00 UTC"), "iau_mars", "CN+S", "Mars")
     pos = [3376.17890941875839416753, -325.55203839445334779157, -121.47422900638389364758]
@@ -3285,8 +3313,6 @@ def test_gfrfov():
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
-    spice.furnsh(CassiniKernels.satSpk)
     # Changed ABCORR to NONE from S for this test, so we do not need SSB
     # begin test
     inst  = "CASSINI_ISS_WAC"
@@ -3480,8 +3506,6 @@ def test_gftfov():
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
-    spice.furnsh(CassiniKernels.satSpk)
     # Changed ABCORR to LT from LT+S for this test, so we do not need SSB
     # begin test
     # Cassini ISS NAC observed Enceladus on 2013-FEB-25 from ~11:00 to ~12:00
@@ -3707,8 +3731,6 @@ def test_illumf():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     et = spice.str2et('2013 FEB 25 11:50:00 UTC')
     # start of test
@@ -3736,8 +3758,6 @@ def test_illumg():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     et = spice.str2et('2013 FEB 25 11:50:00 UTC')
     spoint, trgepc, srfvec = spice.subpnt("Near Point/Ellipsoid", 'Enceladus', et, 'IAU_ENCELADUS', 'CN+S', 'Earth')
@@ -4128,8 +4148,7 @@ def test_lgrind():
 
 def test_limbpt():
     spice.kclear()
-    spice.furnsh(CoreKernels.spk)
-    spice.furnsh(ExtraKernels.marsSpk)
+    spice.furnsh(CoreKernels.allspk)
     spice.furnsh(CoreKernels.pck)
     spice.furnsh(CoreKernels.lsk)
     spice.furnsh(ExtraKernels.phobosDsk)
@@ -4593,7 +4612,6 @@ def test_occult():
     spice.kclear()
     # load kernels
     spice.furnsh(CoreKernels.testMetaKernel)
-    spice.furnsh(ExtraKernels.earthStnSpk)
     spice.furnsh(ExtraKernels.earthHighPerPck)
     spice.furnsh(ExtraKernels.earthTopoTf )
     # start test
@@ -5026,8 +5044,6 @@ def test_pxfrm2():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     # start of test
     etrec = spice.str2et("2013 FEB 25 11:50:00 UTC")
@@ -5636,8 +5652,6 @@ def test_sincpt():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     # start test
     et = spice.str2et("2013 FEB 25 11:50:00 UTC")
@@ -5861,19 +5875,18 @@ def test_spkcls():
 def test_spkcov():
     spice.kclear()
     cover = spice.stypes.SPICEDOUBLE_CELL(2000)
-    ids = spice.spkobj(CoreKernels.spk)
+    ids = spice.spkobj(CoreKernels.allspk)
     tempObj = ids[0]
     spice.scard(0, cover)
-    spice.spkcov(CoreKernels.spk, tempObj, cover)
+    spice.spkcov(CoreKernels.allspk, tempObj, cover)
     result = [x for x in cover]
-    expected = [-94651137.81606464, 315662463.18395346]
+    expected = [415048267., 415161367.]
     npt.assert_array_almost_equal(result, expected)
     spice.kclear()
 
 
 def test_spkcpo():
     spice.kclear()
-    spice.furnsh(ExtraKernels.earthStnSpk)
     spice.furnsh(ExtraKernels.earthHighPerPck)
     spice.furnsh(ExtraKernels.earthTopoTf )
     spice.furnsh(CoreKernels.testMetaKernel)
@@ -5891,7 +5904,6 @@ def test_spkcpo():
 
 def test_spkcpt():
     spice.kclear()
-    spice.furnsh(ExtraKernels.earthStnSpk)
     spice.furnsh(ExtraKernels.earthHighPerPck)
     spice.furnsh(ExtraKernels.earthTopoTf )
     spice.furnsh(CoreKernels.testMetaKernel)
@@ -5909,7 +5921,6 @@ def test_spkcpt():
 
 def test_spkcvo():
     spice.kclear()
-    spice.furnsh(ExtraKernels.earthStnSpk)
     spice.furnsh(ExtraKernels.earthHighPerPck)
     spice.furnsh(ExtraKernels.earthTopoTf )
     spice.furnsh(CoreKernels.testMetaKernel)
@@ -5928,7 +5939,6 @@ def test_spkcvo():
 
 def test_spkcvt():
     spice.kclear()
-    spice.furnsh(ExtraKernels.earthStnSpk)
     spice.furnsh(ExtraKernels.earthHighPerPck)
     spice.furnsh(ExtraKernels.earthTopoTf )
     spice.furnsh(CoreKernels.testMetaKernel)
@@ -6028,7 +6038,7 @@ def test_spkgps():
 
 def test_spklef():
     spice.kclear()
-    handle = spice.spklef(CoreKernels.spk)
+    handle = spice.spklef(CoreKernels.allspk)
     assert handle != -1
     spice.spkuef(handle)
     spice.kclear()
@@ -6055,12 +6065,12 @@ def test_spkobj():
     # Same as test_spkcov
     spice.kclear()
     cover = spice.stypes.SPICEDOUBLE_CELL(2000)
-    ids = spice.spkobj(CoreKernels.spk)
+    ids = spice.spkobj(CoreKernels.allspk)
     tempObj = ids[0]
     spice.scard(0, cover)
-    spice.spkcov(CoreKernels.spk, tempObj, cover)
+    spice.spkcov(CoreKernels.allspk, tempObj, cover)
     result = [x for x in cover]
-    expected = [-94651137.81606464, 315662463.18395346]
+    expected = [415048267., 415161367.]
     npt.assert_array_almost_equal(result, expected)
     spice.kclear()
 
@@ -6071,7 +6081,7 @@ def test_spkopa():
         os.remove(SPKOPA) # pragma: no cover
     spice.kclear()
     spice.furnsh(CoreKernels.testMetaKernel)
-    et = spice.str2et("2002 APR 27 00:00:00.000 TDB")
+    et = spice.str2et("2004 JUL 04 00:00:00.000 TDB")
     # load subset from kernels
     handle, descr, ident = spice.spksfs(5, et, 41)
     body, center, frame, otype, first, last, begin, end = spice.spkuds(descr)
@@ -6175,10 +6185,10 @@ def test_spkpvn():
 def test_spksfs():
     spice.kclear()
     spice.furnsh(CoreKernels.testMetaKernel)
-    idcode = spice.bodn2c("PLUTO BARYCENTER")
-    et = spice.str2et("2001 FEB 18 UTC")
+    idcode = spice.bodn2c("SATURN BARYCENTER")
+    et = spice.str2et("2013 FEB 26 UTC")
     handle, descr, ident = spice.spksfs(idcode, et, 41)
-    assert ident == "DE-405"
+    assert ident == "MONTE Chebyshev Polynomial Table"
     spice.kclear()
 
 
@@ -6225,15 +6235,15 @@ def test_spkuds():
     handle, descr, ident = spice.spksfs(5, et, 41)
     body, center, frame, otype, first, last, begin, end  = spice.spkuds(descr)
     assert body == 5
-    assert begin == 54073
-    assert end == 57950
+    assert begin == 15896
+    assert end == 15925
     assert otype == 2
     spice.kclear()
 
 
 def test_spkuef():
     spice.kclear()
-    handle = spice.spklef(CoreKernels.spk)
+    handle = spice.spklef(CoreKernels.allspk)
     assert handle != -1
     spice.spkuef(handle)
     spice.kclear()
@@ -6750,8 +6760,6 @@ def test_srfxpt():
     spice.furnsh(CassiniKernels.cassPck)
     spice.furnsh(CassiniKernels.cassIk)
     spice.furnsh(CassiniKernels.cassSclk)
-    spice.furnsh(CassiniKernels.satSpk)
-    spice.furnsh(CassiniKernels.cassTourSpk)
     spice.furnsh(CassiniKernels.cassCk)
     # start test
     et = spice.str2et("2013 FEB 25 11:50:00 UTC")
@@ -7033,8 +7041,7 @@ def test_szpool():
 def test_termpt():
     spice.reset()
     spice.kclear()
-    spice.furnsh(CoreKernels.spk)
-    spice.furnsh(ExtraKernels.marsSpk)
+    spice.furnsh(CoreKernels.allspk)
     spice.furnsh(CoreKernels.pck)
     spice.furnsh(CoreKernels.lsk)
     spice.furnsh(ExtraKernels.phobosDsk)

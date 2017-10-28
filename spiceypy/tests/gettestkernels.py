@@ -31,7 +31,7 @@ from six import print_ as six_print
 cwd = os.path.realpath(os.path.dirname(__file__))
 
 def getKernelNameFromURL(url):
-    return url.split('/')[-1]
+    return url.split("/")[-1]
 
 def getPathFromUrl(url):
     return os.path.join(cwd, getKernelNameFromURL(url))
@@ -40,17 +40,18 @@ def cleanupFile(path):
     if os.path.exists(path):
         os.remove(path)
 
+githubUser = os.environ["KERNELS_GITHUB_USER"] if "KERNELS_GITHUB_USER" in os.environ else "AndrewAnnex"
+githubBranch = os.environ["KERNELS_GITHUB_Branch"] if "KERNELS_GITHUB_BRANCH" in os.environ else "master"
+
+makeurl = lambda bn: "https://raw.githubusercontent.com/{}/SpiceyPyTestKernels/{}/{}".format(githubUser,githubBranch,bn)
+
 class CassiniKernels(object):
-    cassPck_url     = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/cpck05Mar2004.tpc"
-    satSpk_url      = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/130220AP_SE_13043_13073.bsp"
-    cassTourSpk_url = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/130212AP_SK_13043_13058.bsp"
-    cassFk_url      = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/cas_v40.tf"
-    cassCk_url      = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/13056_13057ra.bc"
-    cassSclk_url    = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/cas00167.tsc"
-    cassIk_url      = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/cas_iss_v10.ti"
+    cassPck_url     = makeurl("cpck05Mar2004.tpc")
+    cassFk_url      = makeurl("cas_v40.tf")
+    cassCk_url      = makeurl("13056_13057ra.bc")
+    cassSclk_url    = makeurl("cas00167.tsc")
+    cassIk_url      = makeurl("cas_iss_v10.ti")
     cassPck         = getPathFromUrl(cassPck_url)
-    satSpk          = getPathFromUrl(satSpk_url)
-    cassTourSpk     = getPathFromUrl(cassTourSpk_url)
     cassFk          = getPathFromUrl(cassFk_url)
     cassCk          = getPathFromUrl(cassCk_url)
     cassSclk        = getPathFromUrl(cassSclk_url)
@@ -58,8 +59,6 @@ class CassiniKernels(object):
 
 def cleanup_Cassini_Kernels():
     cleanupFile(CassiniKernels.cassPck)
-    cleanupFile(CassiniKernels.satSpk)
-    cleanupFile(CassiniKernels.cassTourSpk)
     cleanupFile(CassiniKernels.cassFk)
     cleanupFile(CassiniKernels.cassCk)
     cleanupFile(CassiniKernels.cassSclk)
@@ -67,47 +66,41 @@ def cleanup_Cassini_Kernels():
 
 
 class ExtraKernels(object):
-    voyagerSclk_url     = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/vg200022.tsc"
-    earthTopoTf_url     = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/earth_topo_050714.tf"
-    earthStnSpk_url     = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/earthstns_itrf93_050714.bsp"
-    earthHighPerPck_url = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/earth_031228_231229_predict.bpc"
-    phobosDsk_url       = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/phobos_lores.bds"
-    marsSpk_url         = "https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/mar022-1.bsp"
+    voyagerSclk_url     = makeurl("vg200022.tsc")
+    earthTopoTf_url     = makeurl("earth_topo_050714.tf")
+    earthHighPerPck_url = makeurl("earth_031228_231229_predict.bpc")
+    phobosDsk_url       = makeurl("phobos_lores.bds")
     voyagerSclk         = getPathFromUrl(voyagerSclk_url)
     earthTopoTf         = getPathFromUrl(earthTopoTf_url)
-    earthStnSpk         = getPathFromUrl(earthStnSpk_url)
     earthHighPerPck     = getPathFromUrl(earthHighPerPck_url)
     phobosDsk           = getPathFromUrl(phobosDsk_url)
-    marsSpk             = getPathFromUrl(marsSpk_url)
 
 def cleanup_Extra_Kernels():
     cleanupFile(ExtraKernels.voyagerSclk)
     cleanupFile(ExtraKernels.earthTopoTf)
-    cleanupFile(ExtraKernels.earthStnSpk)
     cleanupFile(ExtraKernels.earthHighPerPck)
     cleanupFile(ExtraKernels.phobosDsk)
-    cleanupFile(ExtraKernels.marsSpk)
 
 
 class CoreKernels(object):
     import sys
     # note this gets updated
-    currentLSK = 'naif0012.tls'
+    currentLSK = "naif0012.tls"
     #
-    pck_url    = 'https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/pck00010.tpc'
-    spk_url    = 'https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/de405s_{}endian.bsp'.format(sys.byteorder)
-    gm_pck_url = 'https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/gm_de431.tpc'
-    lsk_url    = 'https://raw.githubusercontent.com/AndrewAnnex/SpiceyPyTestKernels/master/{}'.format(currentLSK)
+    pck_url    = makeurl("pck00010.tpc")
+    allspk_url    = makeurl("allspk_{}endian.bsp".format(sys.byteorder))
+    gm_pck_url = makeurl("gm_de431.tpc")
+    lsk_url    = makeurl(currentLSK)
     pck        = getPathFromUrl(pck_url)
-    spk        = getPathFromUrl(spk_url)
+    allspk     = getPathFromUrl(allspk_url)
     gm_pck     = getPathFromUrl(gm_pck_url)
     lsk        = getPathFromUrl(lsk_url)
-    standardKernelList = [pck, spk, gm_pck, lsk]
+    standardKernelList = [pck, allspk, gm_pck, lsk]
     testMetaKernel     = os.path.join(cwd, "exampleKernels.txt")
 
 def cleanup_Core_Kernels():
     cleanupFile(CoreKernels.pck)
-    cleanupFile(CoreKernels.spk)
+    cleanupFile(CoreKernels.allspk)
     cleanupFile(CoreKernels.gm_pck)
     cleanupFile(CoreKernels.lsk)
 
@@ -146,7 +139,7 @@ def attemptDownload(url, kernelName, targetFileName, num_attempts):
 def getStandardKernels():
     six_print("\tChecking for kernels...\n", flush=True)
     getKernel(CoreKernels.pck_url)
-    getKernel(CoreKernels.spk_url)
+    getKernel(CoreKernels.allspk_url)
     getKernel(CoreKernels.gm_pck_url)
     getKernel(CoreKernels.lsk_url)
 
@@ -155,16 +148,12 @@ def getExtraTestKernels():
     # these are test kernels not included in the standard meta kernel
     getKernel(ExtraKernels.voyagerSclk_url)
     getKernel(ExtraKernels.earthTopoTf_url)
-    getKernel(ExtraKernels.earthStnSpk_url)
     getKernel(ExtraKernels.earthHighPerPck_url)
     getKernel(ExtraKernels.phobosDsk_url)
-    getKernel(ExtraKernels.marsSpk_url)
 
 
 def getCassiniTestKernels():
     getKernel(CassiniKernels.cassPck_url)
-    getKernel(CassiniKernels.satSpk_url)
-    getKernel(CassiniKernels.cassTourSpk_url)
     getKernel(CassiniKernels.cassFk_url)
     getKernel(CassiniKernels.cassCk_url)
     getKernel(CassiniKernels.cassSclk_url)
@@ -173,14 +162,14 @@ def getCassiniTestKernels():
 
 def writeTestMetaKernel():
     # Update the paths!
-    with open(os.path.join(cwd, "exampleKernels.txt"), 'w') as kernelFile:
-        kernelFile.write('\\begindata\n')
-        kernelFile.write('KERNELS_TO_LOAD = (\n')
+    with open(os.path.join(cwd, "exampleKernels.txt"), "w") as kernelFile:
+        kernelFile.write("\\begindata\n")
+        kernelFile.write("KERNELS_TO_LOAD = (\n")
         for kernel in CoreKernels.standardKernelList:
-            kernelFile.write('\'{0}\'\n'.format(os.path.join(cwd, kernel)))
-        kernelFile.write(')\n')
-        kernelFile.write('\\begintext')
-    six_print('\nDone writing test meta kernel.', flush=True)
+            kernelFile.write("'{0}'\n".format(os.path.join(cwd, kernel)))
+        kernelFile.write(")\n")
+        kernelFile.write("\\begintext")
+    six_print("\nDone writing test meta kernel.", flush=True)
 
 
 def downloadKernels():
