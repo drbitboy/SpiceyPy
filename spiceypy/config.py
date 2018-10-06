@@ -22,19 +22,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import os
-import pytest
-
-from spiceypy.tests.gettestkernels import attemptDownload
-
-
-def test_gettestkernels():
-    # Force exceptions in gettestkernels.py to get complete coverage there
-    # To complete code coverage in spiceypy.tests.gettestkernels.py
-    with pytest.raises(BaseException):
-        # Generate .HTTPError, return BaseException
-        attemptDownload('https://naif.jpl.nasa.gov/404', 'httperror.txt', 'httperror.txt', 1)
-    with pytest.raises(BaseException):
-        # Generate .URLError, return BaseException
-        attemptDownload('https://no_such_host.naif.jpl.nasa.gov/404', 'urlerror.txt', 'urlerror.txt', 1)
-
+catch_false_founds = True

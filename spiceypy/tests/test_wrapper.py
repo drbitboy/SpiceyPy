@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) [2015-2017] [Andrew Annex]
+Copyright (c) [2015-2018] [Andrew Annex]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -603,9 +603,51 @@ def test_ckw03():
 
 
 def test_ckw05():
-    with pytest.raises(NotImplementedError):
-        spice.ckw05()
+    spice.kclear()
+    CK5 = os.path.join(cwd, "type5.bc")
+    if spice.exists(CK5):
+        os.remove(CK5)  # pragma: no cover
+    # constants
+    avflag = True
+    epochs = np.arange(0.0, 2.0)
+    inst = [-41000, -41001, -41002, -41003]
+    segid = "CK type 05 test segment"
+    # make type 1 data
+    type0data = [[ 9.999e-1, -1.530e-4, -8.047e-5, -4.691e-4, 0.0, 0.0, 0.0, 0.0],
+                  [9.999e-1, -4.592e-4, -2.414e-4, -1.407e-3, -7.921e-10, -1.616e-7, -8.499e-8,  -4.954e-7]]
+    type1data = [[ 9.999e-1, -1.530e-4, -8.047e-5, -4.691e-4],
+                  [9.999e-1, -4.592e-4, -2.414e-4, -1.407e-3]]
+    type2data = [[0.959, -0.00015309, -8.0476e-5, -0.00046913, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                 [0.959, -0.00045928, -0.00024143, -0.0014073, -7.921e-10, -1.616e-7, -8.499e-8, -4.954e-7, 3.234e-7, 1.7e-7, 9.91e-7, 3.234e-7, 1.7e-9, 9.91e-9]]
+    type3data = [[0.959, -0.00015309, -8.0476e-05, -0.00046913, 0.0, 0.0, 0.0],
+                 [0.959, -0.00045928, -0.00024143, -0.0014073, 3.234e-7, 1.7e-7, 9.91e-7]]
+    # begin testing ckw05
+    handle = spice.ckopn(CK5, " ", 0)
+    init_size = os.path.getsize(CK5)
+    # test subtype 0
+    spice.ckw05(handle, 0, 15, epochs[0], epochs[-1], inst[0], "J2000", avflag, segid, epochs, type0data, 1000.0, 1, epochs)
+    # test subtype 1
+    spice.ckw05(handle, 1, 15, epochs[0], epochs[-1], inst[1], "J2000", avflag, segid, epochs, type1data, 1000.0, 1, epochs)
+    # test subtype 2
+    spice.ckw05(handle, 2, 15, epochs[0], epochs[-1], inst[2], "J2000", avflag, segid, epochs, type2data, 1000.0, 1, epochs)
+    # test subtype 3
+    spice.ckw05(handle, 0, 15, epochs[0], epochs[-1], inst[3], "J2000", avflag, segid, epochs, type3data, 1000.0, 1, epochs)
+    spice.ckcls(handle)
+    # test size
+    end_size = os.path.getsize(CK5)
+    assert end_size != init_size
+    # try reading using ck kernel
+    spice.furnsh(CK5)
+    cmat, av, clk = spice.ckgpav(-41000, epochs[0]+0.5, 1.0, "J2000")
+    assert clk == pytest.approx(0.5)
+    spice.kclear()
+    if spice.exists(CK5):
+        os.remove(CK5)  # pragma: no cover
+    spice.kclear()
 
+def test_stress_ckw05():
+    for i in range(1000):
+        test_ckw05()
 
 def test_cleard():
     with pytest.raises(NotImplementedError):
@@ -745,7 +787,7 @@ def test_cvpool():
     assert value[0] == 565.0
     spice.clpool()
     spice.kclear()
-    assert updated
+    assert updated is True
 
 
 def test_cyllat():
@@ -1778,6 +1820,63 @@ def test_dskxv():
     npt.assert_almost_equal(xpt[0], [12.36679999999999957083, 0.0, 0.0])
     spice.kclear()
 
+def test_dskxv_2():
+    spice.kclear()
+    # load kernels
+    spice.furnsh(ExtraKernels.phobosDsk)
+    # get handle
+    dsk1, filtyp, source, handle = spice.kdata(0, "DSK", 256, 5, 256)
+    # get the dladsc from the file
+    dladsc = spice.dlabfs(handle)
+    # get dskdsc for target radius
+    dskdsc = spice.dskgd(handle, dladsc)
+    target = spice.bodc2n(dskdsc.center)
+    fixref = spice.frmnam(dskdsc.frmcde)
+    r = 1.0e10
+    polmrg = 0.5
+    latstp = 1.0
+    lonstp = 2.0
+
+    nhits = 0
+    nderr = 0
+
+    lon = -180.0
+    lat = 90.0
+    nlstep = 0
+    nrays = 0
+    verticies = []
+    raydirs = []
+
+    while lon < 180.0:
+        while nlstep <= 180:
+            if lon == 180.0:
+                lat = 90.0 - nlstep*latstp
+            else:
+                if nlstep == 0:
+                    lat = 90.0 - polmrg
+                elif nlstep == 180:
+                    lat = -90.0 + polmrg
+                else:
+                    lat = 90.0 - nlstep*latstp
+                vertex = spice.latrec(r, np.radians(lon), np.radians(lat))
+                raydir = spice.vminus(vertex)
+                verticies.append(vertex)
+                raydirs.append(raydir)
+                nrays += 1
+                nlstep += 1
+        lon += lonstp
+        lat = 90.0
+        nlstep = 0
+
+    srflst = [dskdsc.surfce]
+    # call dskxsi
+    xpt, foundarray = spice.dskxv(False, target, srflst, 0.0, fixref, verticies, raydirs)
+    # check output
+    assert len(xpt) == 32580
+    assert len(foundarray) == 32580
+    assert foundarray.all()
+    spice.kclear()
+
 def test_dskz02():
     spice.kclear()
     # open the dsk file
@@ -2285,7 +2384,7 @@ def test_ekcii():
     assert attdsc.size == 1
     assert attdsc.strlen == 1
     assert not attdsc.indexd
-    assert not attdsc.nullok
+    assert attdsc.nullok # this used to be false, although clearly it should be true given the call to ekbseg
     if spice.exists(ekpath):
         os.remove(ekpath) # pragma: no cover
     assert not spice.exists(ekpath)
@@ -3078,8 +3177,44 @@ def test_gfevnt():
 
 
 def test_gffove():
-    with pytest.raises(NotImplementedError):
-        spice.gffove()
+    spice.kclear()
+    spice.furnsh(CoreKernels.testMetaKernel)
+    spice.furnsh(CassiniKernels.cassCk)
+    spice.furnsh(CassiniKernels.cassFk)
+    spice.furnsh(CassiniKernels.cassIk)
+    spice.furnsh(CassiniKernels.cassPck)
+    spice.furnsh(CassiniKernels.cassSclk)
+    spice.furnsh(CassiniKernels.cassTourSpk)
+    spice.furnsh(CassiniKernels.satSpk)
+    # Cassini ISS NAC observed Enceladus on 2013-FEB-25 from ~11:00 to ~12:00
+    # Split confinement window, from continuous CK coverage, into two pieces
+    et_start = spice.str2et("2013-FEB-25 10:00:00.000")
+    et_end   = spice.str2et("2013-FEB-25 11:45:00.000")
+    cnfine   = spice.stypes.SPICEDOUBLE_CELL(2)
+    spice.wninsd(et_start, et_end, cnfine)
+    result   = spice.stypes.SPICEDOUBLE_CELL(1000)
+    # call gffove
+    udstep = spiceypy.utils.callbacks.SpiceUDSTEP(spice.gfstep)
+    udrefn = spiceypy.utils.callbacks.SpiceUDREFN(spice.gfrefn)
+    udrepi = spiceypy.utils.callbacks.SpiceUDREPI(spice.gfrepi)
+    udrepu = spiceypy.utils.callbacks.SpiceUDREPU(spice.gfrepu)
+    udrepf = spiceypy.utils.callbacks.SpiceUDREPF(spice.gfrepf)
+    udbail = spiceypy.utils.callbacks.SpiceUDBAIL(spice.gfbail)
+    spice.gfsstp(1.0)
+    spice.gffove('CASSINI_ISS_NAC', 'ELLIPSOID', [0.0, 0.0, 0.0], 'ENCELADUS', 'IAU_ENCELADUS',
+                 'LT+S', 'CASSINI', 1.e-6, udstep, udrefn, True,
+                 udrepi, udrepu, udrepf, True, udbail,
+                 cnfine, result)
+    # Verify the expected results
+    assert len(result) == 2
+    sTimout = "YYYY-MON-DD HR:MN:SC UTC ::RND"
+    assert spice.timout(result[0], sTimout) == '2013-FEB-25 10:42:33 UTC'
+    assert spice.timout(result[1], sTimout) == '2013-FEB-25 11:45:00 UTC'
+    # Cleanup
+    if spice.gfbail():
+        spice.gfclrh()
+    spice.gfsstp(0.5)
+    spice.kclear()
 
 
 def test_gfilum():
@@ -3128,8 +3263,32 @@ def test_gfinth():
 
 
 def test_gfocce():
-    with pytest.raises(NotImplementedError):
-        spice.gfocce()
+    spice.kclear()
+    if spice.gfbail():
+        spice.gfclrh()
+    spice.furnsh(CoreKernels.testMetaKernel)
+    et0 = spice.str2et('2001 DEC 01 00:00:00 TDB')
+    et1 = spice.str2et('2002 JAN 01 00:00:00 TDB')
+    cnfine = spice.stypes.SPICEDOUBLE_CELL(2)
+    spice.wninsd(et0, et1, cnfine)
+    result = spice.stypes.SPICEDOUBLE_CELL(1000)
+    spice.gfsstp(20.0)
+    udstep = spiceypy.utils.callbacks.SpiceUDSTEP(spice.gfstep)
+    udrefn = spiceypy.utils.callbacks.SpiceUDREFN(spice.gfrefn)
+    udrepi = spiceypy.utils.callbacks.SpiceUDREPI(spice.gfrepi)
+    udrepu = spiceypy.utils.callbacks.SpiceUDREPU(spice.gfrepu)
+    udrepf = spiceypy.utils.callbacks.SpiceUDREPF(spice.gfrepf)
+    udbail = spiceypy.utils.callbacks.SpiceUDBAIL(spice.gfbail)
+    # call gfocce
+    spice.gfocce("Any", "moon", "ellipsoid", "iau_moon", "sun",
+                 "ellipsoid", "iau_sun", "lt", "earth", 1.e-6,
+                 udstep, udrefn, True, udrepi, udrepu, udrepf,
+                 True, udbail, cnfine, result)
+    if spice.gfbail():
+        spice.gfclrh()
+    count = spice.wncard(result)
+    assert count == 1
+    spice.kclear()
 
 
 def test_gfoclt():
@@ -5291,8 +5450,9 @@ def test_reordc():
     array = ["one", "three", "two", "zero"]
     iorder = [3, 0, 2, 1]
     outarray = spice.reordc(iorder, 4, 5, array)
-    assert outarray == array  # reordc appears to be broken...
-
+    # reordc appears to be broken...
+    with pytest.raises(AssertionError):
+        assert outarray == ["zero", "one", "two", "three"]
 
 def test_reordd():
     array = [1.0, 3.0, 2.0]
@@ -5312,7 +5472,7 @@ def test_reordl():
     array = [True, True, False]
     iorder = [0, 2, 1]
     outarray = spice.reordl(iorder, 3, array)
-    npt.assert_array_almost_equal(outarray, array)  # reordl has the same issue as reordc
+    npt.assert_array_almost_equal(outarray, [True, False, True])
 
 
 def test_repmc():
@@ -5687,11 +5847,30 @@ def test_sphrec():
 
 def test_spk14a():
     discrete_epochs = [100.0, 200.0, 300.0, 400.0]
-    cheby_coeffs14 = [1.0101, 1.0102, 1.0103, 1.0201, 1.0202, 1.0203, 1.0301, 1.0302,
-                      1.0303, 2.0101, 2.0102, 2.0103, 2.0201, 2.0202, 2.0203, 2.0301,
-                      2.0302, 2.0303, 3.0101, 3.0102, 3.0103, 3.0201, 3.0202, 3.0203,
-                      3.0301, 3.0302, 3.0303, 4.0101, 4.0102, 4.0103, 4.0201, 4.0202,
-                      4.0203, 4.0301, 4.0302, 4.0303]
+    cheby_coeffs14 = [150.0, 50.0, 1.0101, 1.0102, 1.0103,
+                                   1.0201, 1.0202, 1.0203,
+                                   1.0301, 1.0302, 1.0303,
+                                   1.0401, 1.0402, 1.0403,
+                                   1.0501, 1.0502, 1.0503,
+                                   1.0601, 1.0602, 1.0603, 250.0, 50.0,
+                                   2.0101, 2.0102, 2.0103,
+                                   2.0201, 2.0202, 2.0203,
+                                   2.0301, 2.0302, 2.0303,
+                                   2.0401, 2.0402, 2.0403,
+                                   2.0501, 2.0502, 2.0503,
+                                   2.0601, 2.0602, 2.0603, 350.0, 50.0,
+                                   3.0101, 3.0102, 3.0103,
+                                   3.0201, 3.0202, 3.0203,
+                                   3.0301, 3.0302, 3.0303,
+                                   3.0401, 3.0402, 3.0403,
+                                   3.0501, 3.0502, 3.0503,
+                                   3.0601, 3.0602, 3.0603, 450.0, 50.0,
+                                   4.0101, 4.0102, 4.0103,
+                                   4.0201, 4.0202, 4.0203,
+                                   4.0301, 4.0302, 4.0303,
+                                   4.0401, 4.0402, 4.0403,
+                                   4.0501, 4.0502, 4.0503,
+                                   4.0601, 4.0602, 4.0603]
     spk14 = os.path.join(cwd, "test14.bsp")
     if spice.exists(spk14):
         os.remove(spk14) # pragma: no cover
@@ -5717,11 +5896,30 @@ def test_spk14bstress():
 def test_spk14b():
     # Same as test_spk14a
     discrete_epochs = [100.0, 200.0, 300.0, 400.0]
-    cheby_coeffs14 = [1.0101, 1.0102, 1.0103, 1.0201, 1.0202, 1.0203, 1.0301, 1.0302,
-                      1.0303, 2.0101, 2.0102, 2.0103, 2.0201, 2.0202, 2.0203, 2.0301,
-                      2.0302, 2.0303, 3.0101, 3.0102, 3.0103, 3.0201, 3.0202, 3.0203,
-                      3.0301, 3.0302, 3.0303, 4.0101, 4.0102, 4.0103, 4.0201, 4.0202,
-                      4.0203, 4.0301, 4.0302, 4.0303]
+    cheby_coeffs14 = [150.0, 50.0, 1.0101, 1.0102, 1.0103,
+                                   1.0201, 1.0202, 1.0203,
+                                   1.0301, 1.0302, 1.0303,
+                                   1.0401, 1.0402, 1.0403,
+                                   1.0501, 1.0502, 1.0503,
+                                   1.0601, 1.0602, 1.0603, 250.0, 50.0,
+                                   2.0101, 2.0102, 2.0103,
+                                   2.0201, 2.0202, 2.0203,
+                                   2.0301, 2.0302, 2.0303,
+                                   2.0401, 2.0402, 2.0403,
+                                   2.0501, 2.0502, 2.0503,
+                                   2.0601, 2.0602, 2.0603, 350.0, 50.0,
+                                   3.0101, 3.0102, 3.0103,
+                                   3.0201, 3.0202, 3.0203,
+                                   3.0301, 3.0302, 3.0303,
+                                   3.0401, 3.0402, 3.0403,
+                                   3.0501, 3.0502, 3.0503,
+                                   3.0601, 3.0602, 3.0603, 450.0, 50.0,
+                                   4.0101, 4.0102, 4.0103,
+                                   4.0201, 4.0202, 4.0203,
+                                   4.0301, 4.0302, 4.0303,
+                                   4.0401, 4.0402, 4.0403,
+                                   4.0501, 4.0502, 4.0503,
+                                   4.0601, 4.0602, 4.0603]
     spk14 = os.path.join(cwd, "test14.bsp")
     if spice.exists(spk14):
         os.remove(spk14) # pragma: no cover
@@ -5742,11 +5940,30 @@ def test_spk14b():
 def test_spk14e():
     # Same as test_spk14a
     discrete_epochs = [100.0, 200.0, 300.0, 400.0]
-    cheby_coeffs14 = [1.0101, 1.0102, 1.0103, 1.0201, 1.0202, 1.0203, 1.0301, 1.0302,
-                      1.0303, 2.0101, 2.0102, 2.0103, 2.0201, 2.0202, 2.0203, 2.0301,
-                      2.0302, 2.0303, 3.0101, 3.0102, 3.0103, 3.0201, 3.0202, 3.0203,
-                      3.0301, 3.0302, 3.0303, 4.0101, 4.0102, 4.0103, 4.0201, 4.0202,
-                      4.0203, 4.0301, 4.0302, 4.0303]
+    cheby_coeffs14 = [150.0, 50.0, 1.0101, 1.0102, 1.0103,
+                                   1.0201, 1.0202, 1.0203,
+                                   1.0301, 1.0302, 1.0303,
+                                   1.0401, 1.0402, 1.0403,
+                                   1.0501, 1.0502, 1.0503,
+                                   1.0601, 1.0602, 1.0603, 250.0, 50.0,
+                                   2.0101, 2.0102, 2.0103,
+                                   2.0201, 2.0202, 2.0203,
+                                   2.0301, 2.0302, 2.0303,
+                                   2.0401, 2.0402, 2.0403,
+                                   2.0501, 2.0502, 2.0503,
+                                   2.0601, 2.0602, 2.0603, 350.0, 50.0,
+                                   3.0101, 3.0102, 3.0103,
+                                   3.0201, 3.0202, 3.0203,
+                                   3.0301, 3.0302, 3.0303,
+                                   3.0401, 3.0402, 3.0403,
+                                   3.0501, 3.0502, 3.0503,
+                                   3.0601, 3.0602, 3.0603, 450.0, 50.0,
+                                   4.0101, 4.0102, 4.0103,
+                                   4.0201, 4.0202, 4.0203,
+                                   4.0301, 4.0302, 4.0303,
+                                   4.0401, 4.0402, 4.0403,
+                                   4.0501, 4.0502, 4.0503,
+                                   4.0601, 4.0602, 4.0603]
     spk14 = os.path.join(cwd, "test14.bsp")
     if spice.exists(spk14):
         os.remove(spk14) # pragma: no cover
@@ -6573,8 +6790,47 @@ def test_spkw17():
 
 
 def test_spkw18():
-    with pytest.raises(NotImplementedError):
-        spice.spkw18()
+    spice.kclear()
+    #
+    SPK18 = os.path.join(cwd, "test18.bsp")
+    if spice.exists(SPK18):
+        os.remove(SPK18)  # pragma: no cover
+    # make a new kernel
+    handle = spice.spkopn(SPK18, 'Type 18 SPK internal file name.', 4)
+    init_size = os.path.getsize(SPK18)
+    # test data
+    body = 3
+    center = 10
+    ref =  "J2000"
+    epochs = [100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0, 900.0]
+    states = [
+        [101., 201., 301., 401., 501., 601., 1., 1., 1., 1., 1., 1.],
+        [102., 202., 302., 402., 502., 602., 1., 1., 1., 1., 1., 1.],
+        [103., 203., 303., 403., 503., 603., 1., 1., 1., 1., 1., 1.],
+        [104., 204., 304., 404., 504., 604., 1., 1., 1., 1., 1., 1.],
+        [105., 205., 305., 405., 505., 605., 1., 1., 1., 1., 1., 1.],
+        [106., 206., 306., 406., 506., 606., 1., 1., 1., 1., 1., 1.],
+        [107., 207., 307., 407., 507., 607., 1., 1., 1., 1., 1., 1.],
+        [108., 208., 308., 408., 508., 608., 1., 1., 1., 1., 1., 1.],
+        [109., 209., 309., 409., 509., 609., 1., 1., 1., 1., 1., 1.],
+    ]
+    # test spkw18 with S18TP0
+    spice.spkw18(handle, spice.stypes.SpiceSPK18Subtype.S18TP0, body, center, ref, epochs[0], epochs[-1], "SPK type 18 test segment", 3, states, epochs)
+    # close the kernel
+    spice.spkcls(handle)
+    end_size = os.path.getsize(SPK18)
+    assert end_size != init_size
+    # test reading data
+    handle = spice.spklef(SPK18)
+    state, lt = spice.spkgeo(body, epochs[0], ref, center)
+    npt.assert_array_equal(state, [101., 201., 301., 1., 1., 1., ])
+    state, lt = spice.spkgeo(body, epochs[1], ref, center)
+    npt.assert_array_equal(state, [102., 202., 302., 1., 1., 1., ])
+    spice.spkcls(handle)
+    spice.kclear()
+    # cleanup
+    if spice.exists(SPK18):
+        os.remove(SPK18)  # pragma: no cover
 
 
 def test_spkw20():
@@ -6769,12 +7025,11 @@ def test_srfxpt():
     npt.assert_array_almost_equal(obspos, expected_obspos)
     # Iterable ET argument:  et-10, et, et+10
     ets = [et - 10.0, et, et + 10.0]
-    sdtoArr = spice.srfxpt("Ellipsoid", 'Enceladus', ets, "LT+S", "CASSINI", frame, bsight)
-    assert (3, 4) == sdtoArr.shape
-    assert 0. == spice.vnorm(spice.vsub(sdtoArr[1, 0], spoint))
-    assert 0. == (sdtoArr[1, 1] - dist)
-    assert 0. == (sdtoArr[1, 2] - trgepc)
-    assert 0. == spice.vnorm(spice.vsub(sdtoArr[1, 3], obspos))
+    spoints, dists, trgepcs, obsposs = spice.srfxpt("Ellipsoid", 'Enceladus', ets, "LT+S", "CASSINI", frame, bsight)
+    assert 0. == spice.vnorm(spice.vsub(spoints[1], spoint))
+    assert 0. == (dists[1] - dist)
+    assert 0. == (trgepcs[1] - trgepc)
+    assert 0. == spice.vnorm(spice.vsub(obsposs[1], obspos))
     # Cleanup
     spice.kclear()
 
@@ -6887,10 +7142,9 @@ def test_subpt():
     npt.assert_almost_equal(dist, 16.705476097706171)
     npt.assert_almost_equal(sep, 0.15016657506598063)
     # Iterable ET argument to spice.subpt()
-    point1Alt1Arr = spice.subpt("near point", "earth", [et-20., et, et+20.], "lt+s", "moon")
-    assert (3, 2) == point1Alt1Arr.shape
-    assert 0. == spice.vnorm(spice.vsub(point1Alt1Arr[1, 0], point1))
-    assert 0. == (point1Alt1Arr[1, 1] - alt1)
+    points, alts = spice.subpt("near point", "earth", [et-20., et, et+20.], "lt+s", "moon")
+    assert 0. == spice.vnorm(spice.vsub(points[1], point1))
+    assert 0. == (alts[1] - alt1)
     # Cleanup
     spice.kclear()
 
@@ -6982,7 +7236,7 @@ def test_swpool():
     assert value[0] == 555.0
     spice.clpool()
     spice.kclear()
-    assert updated
+    assert updated is True
 
 
 def test_sxform():
